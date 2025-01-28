@@ -1,6 +1,6 @@
 # Meeting Minutes
-## Team: Jianlong Chen, Kenneth de Guzman
-## Sponsor: Henri Casanova
+#### Team: Jianlong Chen, Kenneth de Guzman
+#### Sponsor: Henri Casanova
 
 ---
 ### Meeting 1
