@@ -83,3 +83,24 @@ async def get_summarized_simulations() -> dict:
         'detail': 'Data retrieved successfully.' if summarized_data else 'No data retrieved.',
         'result': summarized_data
     }
+
+@router.get('/public/totals/', response_model=ApiResponse)
+async def get_totals() -> dict:
+    """
+    Get the total counts for downloads, visualizations, and simulations.
+    """
+    downloads_count = downloads_collection.count_documents({})
+    visualizations_count = visualizations_collection.count_documents({})
+    simulations_count = simulations_collection.count_documents({})
+
+    totals = {
+        "downloads": downloads_count,
+        "visualizations": visualizations_count,
+        "simulations": simulations_count
+    }
+
+    return {
+        'detail': 'Data retrieved successfully.',
+        'result': totals
+    }
+
