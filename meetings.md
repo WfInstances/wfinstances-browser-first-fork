@@ -31,3 +31,16 @@ Actions:
 - Added a new totals endpoint to usage/router.py under api
 - Modified UsageStatsModal.tsx to fetch data from the totals endpoint
 - Went over how to show data better (graph, tabs for separate collections)
+- Created button for user survey questionnaire
+---
+### Meeting 3 (Week 3: 2/4 - 2/8)
+
+Date: Tuesday, 2/4/25 
+
+Business: 
+- Modified database to get accurate dump of usage stats
+- Talked about ways to show location of where people are using the system (world map from IPs)
+- Continued discussing potential ways to do the visualization of usage data
+
+Actions:
+- 
