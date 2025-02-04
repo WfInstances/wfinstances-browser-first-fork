@@ -46,7 +46,7 @@ export function Navbar() {
                 </Group>
                 <Group gap={5} visibleFrom="xs">
 
-                    <Tooltip label="Usage report" position="bottom">
+                    <Tooltip label="Usage Report" position="bottom">
                         <ActionIcon variant="default" size='lg' onClick={() => { openStatsModal(); }}><IconReport stroke={1.5} size={20} /></ActionIcon>
                     </Tooltip>
 
