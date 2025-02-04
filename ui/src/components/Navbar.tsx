@@ -9,13 +9,14 @@ import {
     Button,
     Tooltip
 } from '@mantine/core';
-import { IconSun, IconMoon, IconHelpSmall, IconInfoSmall, IconReport } from '@tabler/icons-react';
+import { IconSun, IconMoon, IconHelpSmall, IconInfoSmall, IconReport, IconPencil } from '@tabler/icons-react';
 import cx from 'clsx';
 import classes from './style/Navbar.module.css';
 import logo from '../../public/images/wfcommons-vertical.png';
 import { AboutModal } from "~/components/AboutModal";
 import { HelpModal } from "~/components/HelpModal";
 import { UsageStatsModal } from './UsageStatsModal';
+import { QuestionnairesModal } from "./QuestionnairesModal"; 
 import { useDisclosure } from "@mantine/hooks";
 
 
@@ -26,6 +27,7 @@ export function Navbar() {
     const [openedAboutModal, { open: openAboutModal, close: closeAboutModal }] = useDisclosure(false);
     const [openedHelpModal, { open: openHelpModal, close: closeHelpModal }] = useDisclosure(false);
     const [openedStatsModal, { open: openStatsModal, close: closeStatsModal }] = useDisclosure(false);
+    const [openedQuestionnaireModal, { open: openQuestionnaireModal, close: closeQuestionnaireModal }] = useDisclosure(false);
 
     const otherLightDarkMode = (computedColorScheme === 'light' ? 'dark' : 'light');
 
@@ -37,6 +39,7 @@ export function Navbar() {
             <AboutModal opened={openedAboutModal} onClose={closeAboutModal} />
             <HelpModal opened={openedHelpModal} onClose={closeHelpModal} />
             <UsageStatsModal opened={openedStatsModal} onClose={closeStatsModal} />
+            <QuestionnairesModal opened={openedQuestionnaireModal} onClose={closeQuestionnaireModal} />
             <Container className={classes.inner} size="xl">
                 <Group gap={5}>
                     <a href={"https://wfcommons.org"} target={"_blank"} rel={"noreferrer"}>
@@ -48,6 +51,10 @@ export function Navbar() {
 
                     <Tooltip label="Usage Report" position="bottom">
                         <ActionIcon variant="default" size='lg' onClick={() => { openStatsModal(); }}><IconReport stroke={1.5} size={20} /></ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="User Survey" position="bottom">
+                        <ActionIcon variant="default" size='lg' onClick={() => { openQuestionnaireModal(); }}><IconPencil stroke={1.5} size={20} /></ActionIcon>
                     </Tooltip>
 
                     <Tooltip label="Help..." position="bottom">
