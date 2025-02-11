@@ -104,3 +104,41 @@ async def get_totals() -> dict:
         'result': totals
     }
 
+@router.get('/public/weekly_usage/{data_type}/', response_model=ApiResponse)
+async def get_weekly_usage(data_type: str) -> dict:
+    """
+    Get the total data (downloads, visualizations, or simulations) and unique IPs per week for visualization in the front-end.
+    The X-axis will represent the total data for the week, and the Y-axis will represent the week number.
+    """
+    # Define which collection to use based on the `data_type`
+    if data_type == "downloads":
+        data_collection = downloads_collection
+    elif data_type == "visualizations":
+        data_collection = visualizations_collection
+    elif data_type == "simulations":
+        data_collection = simulations_collection
+    else:
+        return {
+            'detail': 'Invalid data type specified.',
+            'result': []
+        }
+
+    # Fetch all records from the chosen collection
+    data = list(data_collection.find({}))
+
+    # Group the data by week and summarize information
+    summarized_data = group_by_week(data, data_type)
+
+    # Prepare data for chart
+    chart_data = []
+    for idx, week_data in enumerate(summarized_data):
+        chart_data.append({
+            "week_number": idx + 1,  # Week number (Y-axis)
+            f"{data_type}_total": week_data[data_type],  # Total for the week (X-axis)
+            "ips": week_data["ips"]  # Unique IP addresses in that week
+        })
+
+    return {
+        'detail': 'Data retrieved successfully.' if chart_data else 'No data retrieved.',
+        'result': chart_data
+    }
