@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from src.database import downloads_collection, visualizations_collection, simulations_collection
 from src.usage.service import group_by_week
 from src.models import ApiResponse
+from src.usage.service import get_ip_country_name
 
 router = APIRouter()
 

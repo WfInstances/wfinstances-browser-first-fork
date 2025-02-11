@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
+import ipinfo
+import os
 
 def get_week_range(date):
     # Get the start (Sunday) and end (Saturday) of the week
@@ -31,3 +33,15 @@ def group_by_week(data, field_name):
     } for week in weekly_data]
 
     return result
+
+
+def get_ip_country_name(ip_string):
+    try:
+        access_token = os.getenv("IPINFO_TOKEN")
+        handler = ipinfo.getHandler(access_token)
+        details = handler.getDetails(ip_string)
+        return details.details["country_name"]
+    except Exception:
+        return None
+
+
