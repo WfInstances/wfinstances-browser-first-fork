@@ -1,4 +1,4 @@
-# Meeting Minutes
+## Meeting Minutes
 #### Team: Jianlong Chen, Kenneth de Guzman
 
 ---
@@ -43,4 +43,13 @@ Business:
 - Continued discussing potential ways to do the visualization of usage data
 
 Actions:
-- 
+- Created a new API endpoint for weekly usage data grouped by their type
+- Implemented a linen chart graph for showing the frequency of what is used on the site
+- Added buttons to switch between the three different usage types (downloads, visualizations, simulations)
+---
+### Meeting 4 (Week 4: 2/11 - 2/15)
+
+Business:
+
+
+Actions:
