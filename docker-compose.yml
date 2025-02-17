@@ -46,6 +46,8 @@ services:
       - 127.0.0.1:8081:8081
     networks:
       - nginx-network
+    secrets:
+      - ipinfo_token_file
 
   mongodb:
     container_name: wfinstances-browser-mongodb
@@ -73,6 +75,8 @@ secrets:
     file: ${NGINX_SSL_CERTIFICATE_PATH:-/dev/null}
   nginx_private_key:
     file: ${NGINX_SSL_PRIVATE_KEY_PATH:-/dev/null}
+  ipinfo_token_file:
+    file: ${IPINFO_DOT_IO_TOKEN_FILE:-/dev/null}
 
 volumes:
   db:
