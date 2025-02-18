@@ -1,8 +1,7 @@
 from fastapi import APIRouter
 from src.database import downloads_collection, visualizations_collection, simulations_collection
-from src.usage.service import group_by_week
+from src.usage.service import group_by_week, get_ip_country_name, get_top_countries
 from src.models import ApiResponse
-from src.usage.service import get_ip_country_name
 
 router = APIRouter()
 
@@ -11,13 +10,10 @@ async def get_number_of_instances_downloaded() -> dict:
     """
     Get all data related to downloads, visualizations, and simulations.
     """
-
-    # Fetch all documents in the collections
     downloads_data = list(downloads_collection.find({}))
     visualizations_data = list(visualizations_collection.find({}))
     simulations_data = list(simulations_collection.find({}))
 
-    # Convert the BSON documents to dictionaries
     downloads_list = [{
         "id": str(download['_id']),
         "date": download['date'],
@@ -40,7 +36,6 @@ async def get_number_of_instances_downloaded() -> dict:
         "wfinstance": simulation['wfinstance'],
     } for simulation in simulations_data]
 
-    # Combine all the data into a single dictionary
     combined_data = {
         "downloads": downloads_list,
         "visualizations": visualizations_list,
@@ -55,9 +50,7 @@ async def get_number_of_instances_downloaded() -> dict:
 @router.get('/public/downloads/', response_model=ApiResponse)
 async def get_summarized_downloads() -> dict:
     downloads_data = list(downloads_collection.find({}))
-
     summarized_data = group_by_week(downloads_data, "downloads")
-
     return {
         'detail': 'Data retrieved successfully.' if summarized_data else 'No data retrieved.',
         'result': summarized_data
@@ -66,9 +59,7 @@ async def get_summarized_downloads() -> dict:
 @router.get('/public/visualizations/', response_model=ApiResponse)
 async def get_summarized_visualizations() -> dict:
     visualizations_data = list(visualizations_collection.find({}))
-
     summarized_data = group_by_week(visualizations_data, "visualizations")
-
     return {
         'detail': 'Data retrieved successfully.' if summarized_data else 'No data retrieved.',
         'result': summarized_data
@@ -77,9 +68,7 @@ async def get_summarized_visualizations() -> dict:
 @router.get('/public/simulations/', response_model=ApiResponse)
 async def get_summarized_simulations() -> dict:
     simulations_data = list(simulations_collection.find({}))
-
     summarized_data = group_by_week(simulations_data, "simulations")
-
     return {
         'detail': 'Data retrieved successfully.' if summarized_data else 'No data retrieved.',
         'result': summarized_data
@@ -87,19 +76,14 @@ async def get_summarized_simulations() -> dict:
 
 @router.get('/public/totals/', response_model=ApiResponse)
 async def get_totals() -> dict:
-    """
-    Get the total counts for downloads, visualizations, and simulations.
-    """
     downloads_count = downloads_collection.count_documents({})
     visualizations_count = visualizations_collection.count_documents({})
     simulations_count = simulations_collection.count_documents({})
-
     totals = {
         "downloads": downloads_count,
         "visualizations": visualizations_count,
         "simulations": simulations_count
     }
-
     return {
         'detail': 'Data retrieved successfully.',
         'result': totals
@@ -107,11 +91,6 @@ async def get_totals() -> dict:
 
 @router.get('/public/weekly_usage/{data_type}/', response_model=ApiResponse)
 async def get_weekly_usage(data_type: str) -> dict:
-    """
-    Get the total data (downloads, visualizations, or simulations) and unique IPs per week for visualization in the front-end.
-    The X-axis will represent the total data for the week, and the Y-axis will represent the week number.
-    """
-    # Define which collection to use based on the `data_type`
     if data_type == "downloads":
         data_collection = downloads_collection
     elif data_type == "visualizations":
@@ -123,23 +102,46 @@ async def get_weekly_usage(data_type: str) -> dict:
             'detail': 'Invalid data type specified.',
             'result': []
         }
-
-    # Fetch all records from the chosen collection
     data = list(data_collection.find({}))
-
-    # Group the data by week and summarize information
     summarized_data = group_by_week(data, data_type)
-
-    # Prepare data for chart
     chart_data = []
     for idx, week_data in enumerate(summarized_data):
         chart_data.append({
-            "week_number": idx + 1,  # Week number (Y-axis)
-            f"{data_type}_total": week_data[data_type],  # Total for the week (X-axis)
-            "ips": week_data["ips"]  # Unique IP addresses in that week
+            "week_number": idx + 1,
+            f"{data_type}_total": week_data[data_type],
+            "ips": week_data["ips"]
         })
-
     return {
         'detail': 'Data retrieved successfully.' if chart_data else 'No data retrieved.',
         'result': chart_data
+    }
+
+@router.get('/public/ips/', response_model=ApiResponse)
+async def get_ips_with_countries() -> dict:
+    """
+    Get all distinct IP addresses that have performed actions, along with their resolved country names.
+    """
+    downloads_ips = [item["ip"] for item in downloads_collection.find({})]
+    visualizations_ips = [item["ip"] for item in visualizations_collection.find({})]
+    simulations_ips = [item["ip"] for item in simulations_collection.find({})]
+    all_ips = list(set(downloads_ips + visualizations_ips + simulations_ips))
+    ip_country_mapping = get_ip_country_name(all_ips)  # Returns list of (ip, country)
+    return {
+        'detail': 'Data retrieved successfully.',
+        'result': ip_country_mapping
+    }
+
+@router.get('/public/top-countries/', response_model=ApiResponse)
+async def get_top_countries_route() -> dict:
+    """
+    Get the top 10 countries based on combined usage (downloads, visualizations, and simulations).
+    """
+    downloads_ips = [item["ip"] for item in downloads_collection.find({})]
+    visualizations_ips = [item["ip"] for item in visualizations_collection.find({})]
+    simulations_ips = [item["ip"] for item in simulations_collection.find({})]
+    all_ips = list(set(downloads_ips + visualizations_ips + simulations_ips))
+    top_countries = get_top_countries(all_ips)
+    return {
+        'detail': 'Data retrieved successfully.',
+        'result': top_countries
     }
