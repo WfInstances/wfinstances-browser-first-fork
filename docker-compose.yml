@@ -42,6 +42,8 @@ services:
     environment:
       - MONGO_URI=mongodb://mongodb:27017/?retryWrites=true&w=majority
       - NGINX_SERVER_HOSTNAME=${NGINX_SERVER_HOSTNAME}
+    volumes:
+      - ${GITHUB_DATA_DIRECTORY}:/data/github
     ports:
       - 127.0.0.1:8081:8081
     networks:
@@ -57,7 +59,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: wf_instance_browser_db
     volumes:
-      - ~/mongodata:/data/db
+      - ${MONGO_DATA_DIRECTORY}:/data/db
     networks:
       - nginx-network
 
