@@ -37,7 +37,7 @@ export function UsageStatsModal({
   const [topCountriesError, setTopCountriesError] = useState<string | null>(null);
   const [dataType, setDataType] = useState<'downloads' | 'visualizations' | 'simulations'>('downloads');
 
-  // Function to fetch weekly data for a specific data type.
+  // Function to fetch weekly data for a specific data type
   const fetchData = async (type: 'downloads' | 'visualizations' | 'simulations') => {
     setLoading(true);
     setError(null);
@@ -60,7 +60,7 @@ export function UsageStatsModal({
     }
   };
 
-  // Function to fetch totals data.
+  // Function to fetch totals data
   const fetchTotals = async () => {
     setLoading(true);
     setError(null);
@@ -83,7 +83,7 @@ export function UsageStatsModal({
     }
   };
 
-  // Function to fetch top countries data.
+  // Function to fetch top countries data
   const fetchTopCountries = async () => {
     setTopCountriesLoading(true);
     setTopCountriesError(null);
@@ -107,7 +107,7 @@ export function UsageStatsModal({
     }
   };
 
-  // When the modal is opened or dataType changes, fetch totals, weekly data, and top countries.
+  // When modal is opened or dataType changes, fetch totals, weekly data, and top countries
   useEffect(() => {
     if (opened) {
       fetchTotals();
@@ -116,11 +116,11 @@ export function UsageStatsModal({
     }
   }, [opened, dataType]);
 
-  // Construct a union type key for safe access to ChartData properties.
+  // Make a union type key for safe access to ChartData properties
   const key: 'downloads_total' | 'visualizations_total' | 'simulations_total' =
     `${dataType}_total` as 'downloads_total' | 'visualizations_total' | 'simulations_total';
 
-  // Prepare the chart configuration for Chart.js.
+  // Set chart configuration for Chart.js
   const chartDataConfig = {
     labels: chartData.map((item) => `Week ${item.week_number}`),
     datasets: [
@@ -146,7 +146,6 @@ export function UsageStatsModal({
   };
 
   return (
-    // Set the modal size to "xl" for a larger popup.
     <Modal opened={opened} onClose={onClose} title="Usage Stats" size="xl">
       {loading ? (
         <p>Loading...</p>
@@ -154,7 +153,7 @@ export function UsageStatsModal({
         <p>Error: {error}</p>
       ) : (
         <div style={{ display: 'flex', gap: '1rem', minHeight: '500px' }}>
-          {/* Left Column: Main Usage Stats and Chart */}
+          {/* Usage stats and chart */}
           <div style={{ flex: 1 }}>
             <div>
               <Button onClick={() => setDataType('downloads')}>Downloads</Button>
@@ -178,7 +177,7 @@ export function UsageStatsModal({
               <p>No data available</p>
             )}
           </div>
-          {/* Right Column: Sidebar Legend for Top Countries */}
+          {/* Top countries sidebar */}
           <div style={{ width: '300px', borderLeft: '1px solid #ccc', paddingLeft: '1rem' }}>
             <h3>Top 10 Countries</h3>
             {topCountriesLoading ? (

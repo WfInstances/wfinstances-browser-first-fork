@@ -119,7 +119,7 @@ async def get_weekly_usage(data_type: str) -> dict:
 @router.get('/public/ips/', response_model=ApiResponse)
 async def get_ips_with_countries() -> dict:
     """
-    Get all distinct IP addresses that have performed actions, along with their resolved country names.
+    Get all distinct IP addresses that have performed actions, along with country names.
     """
     downloads_ips = [item["ip"] for item in downloads_collection.find({})]
     visualizations_ips = [item["ip"] for item in visualizations_collection.find({})]
