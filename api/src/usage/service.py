@@ -17,15 +17,12 @@ def group_by_week(data, field_name):
         date = datetime.strptime(item['date'], '%Y-%m-%d')
         week_start, week_end = get_week_range(date)
         week = f"{week_start} - {week_end}"
-
-        # Check if 'num_instances' exists, if not count as 1 (for _id-based counting)
-        num_instances = item.get('num_instances', 1)  # Defaults to 1 if not present
-
-        # Increment the appropriate field (downloads, visualizations, etc.)
+        # Check if 'num_instances' exists, if not count as 1
+        num_instances = item.get('num_instances', 1)
+        # Increment the appropriate field and add the IP to the set
         weekly_data[week][field_name] += num_instances
-        weekly_data[week]["ips"].add(item["ip"])  # Add the IP to the set
+        weekly_data[week]["ips"].add(item["ip"])
 
-    # Format the output, converting the IP sets to lists
     result = [{
         "week": week,
         field_name: weekly_data[week][field_name],
@@ -34,14 +31,39 @@ def group_by_week(data, field_name):
 
     return result
 
+def get_ip_country_name(ip_list: list[str]) -> list[tuple[str, str]]:
+    """
+    Given a list of IP addresses, return a list of tuples (ip, country)
+    where each distinct IP is resolved to a country.
+    """
+    result = []
+    access_token = os.getenv("IPINFO_TOKEN")
+    if not access_token:
+        print("IPINFO_TOKEN environment variable is not set.")
+    handler = ipinfo.getHandler(access_token)
+    unique_ips = set(ip_list)
+    for ip in unique_ips:
+        try:
+            details = handler.getDetails(ip)
+            # Try 'country_name' first, then 'country'
+            country = details.details.get("country_name") or details.details.get("country") or "Unknown"
+        except Exception as e:
+            print(f"Error fetching country for IP {ip}: {e}")
+            country = "Unknown"
+        result.append((ip, country))
+    return result
 
-def get_ip_country_name(ip_string):
-    try:
-        access_token = os.getenv("IPINFO_TOKEN")
-        handler = ipinfo.getHandler(access_token)
-        details = handler.getDetails(ip_string)
-        return details.details["country_name"]
-    except Exception:
-        return None
-
-
+def get_top_countries(ip_list: list[str]) -> list[tuple[str, int]]:
+    """
+    Given a list of IP addresses, resolve each to a country using get_ip_country_name,
+    then aggregate and return the top 10 countries (as (country, count) tuples).
+    """
+    resolved = get_ip_country_name(ip_list)  # List of (ip, country)
+    country_counts = {}
+    for _, country in resolved:
+        # Skip unknowns so they aren't counted
+        if country == "Unknown":
+            continue
+        country_counts[country] = country_counts.get(country, 0) + 1
+    sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+    return sorted_countries[:10]
