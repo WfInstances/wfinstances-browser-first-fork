@@ -31,6 +31,34 @@ def group_by_week(data, field_name):
 
     return result
 
+def get_month_range(date):
+    # Get the start of the month and return only the month name
+    start_of_month = date.replace(day=1)
+    return start_of_month.strftime('%B')  # Return the month name (e.g., "January")
+
+def group_by_monthly(data, field_name):
+    # Using a defaultdict to group data by month
+    monthly_data = defaultdict(lambda: {field_name: 0, "ips": set()})
+
+    for item in data:
+        date = datetime.strptime(item['date'], '%Y-%m-%d')  
+        month = get_month_range(date)  # Get the month name for the date
+
+        # Get 'num_instances' value, defaulting to 1 if not present
+        num_instances = item.get('num_instances', 1) 
+
+        # Increment the appropriate field (downloads, visualizations, etc.)
+        monthly_data[month][field_name] += num_instances
+        monthly_data[month]["ips"].add(item["ip"])  # Add IP to the set to ensure uniqueness
+
+    result = [{
+        "month": month,  # Month name
+        field_name: monthly_data[month][field_name],  # Total for the month
+        "ips": list(monthly_data[month]["ips"])  # Unique IP addresses for the month
+    } for month in monthly_data]
+
+    return result
+
 def get_ip_country_name(ip_list: list[str]) -> list[tuple[str, str]]:
     """
     Given a list of IP addresses, return a list of tuples (ip, country)
