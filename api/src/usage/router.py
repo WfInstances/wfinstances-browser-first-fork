@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from src.database import downloads_collection, visualizations_collection, simulations_collection
-from src.usage.service import group_by_week, get_ip_country_name, get_top_countries
+from src.usage.service import group_by_week, group_by_monthly, get_ip_country_name, get_top_countries
 from src.models import ApiResponse
 
 router = APIRouter()
@@ -89,8 +89,13 @@ async def get_totals() -> dict:
         'result': totals
     }
 
-@router.get('/public/weekly_usage/{data_type}/', response_model=ApiResponse)
-async def get_weekly_usage(data_type: str) -> dict:
+@router.get('/public/monthly_usage/{data_type}/', response_model=ApiResponse)
+async def get_monthly_usage(data_type: str) -> dict:
+    """
+    Get the total data (downloads, visualizations, or simulations) and unique IPs for each month.
+    The X-axis will represent the total data for the month, and the Y-axis will represent the month names.
+    """
+    # Define which collection to use based on the `data_type`
     if data_type == "downloads":
         data_collection = downloads_collection
     elif data_type == "visualizations":
@@ -103,13 +108,14 @@ async def get_weekly_usage(data_type: str) -> dict:
             'result': []
         }
     data = list(data_collection.find({}))
-    summarized_data = group_by_week(data, data_type)
+    print(f"Fetched data: {data}")  
+    summarized_data = group_by_monthly(data, data_type)
     chart_data = []
-    for idx, week_data in enumerate(summarized_data):
+    for month_data in summarized_data:
         chart_data.append({
-            "week_number": idx + 1,
-            f"{data_type}_total": week_data[data_type],
-            "ips": week_data["ips"]
+            "month_name": month_data["month"],  # The name of the month (X-axis)
+            f"{data_type}_total": month_data[data_type],  # Total for the month (Y-axis)
+            "ips": month_data["ips"]  # Unique IP addresses in that month
         })
     return {
         'detail': 'Data retrieved successfully.' if chart_data else 'No data retrieved.',

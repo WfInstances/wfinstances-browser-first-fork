@@ -13,7 +13,7 @@ type Totals = {
 };
 
 type ChartData = {
-  week_number: number;
+  month_name: string;
   downloads_total?: number;
   visualizations_total?: number;
   simulations_total?: number;
@@ -42,15 +42,15 @@ export function UsageStatsModal({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8081/usage/public/weekly_usage/${type}/`);
+      const response = await fetch(`http://localhost:8081/usage/public/monthly_usage/${type}/`);
       if (!response.ok) {
-        throw new Error('Failed to fetch weekly usage data');
+        throw new Error('Failed to fetch monthly usage data');
       }
       const data = await response.json();
       if (data && data.result) {
         setChartData(data.result);
       } else {
-        setError('Invalid weekly usage data received');
+        setError('Invalid monthly usage data received');
       }
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -120,17 +120,44 @@ export function UsageStatsModal({
   const key: 'downloads_total' | 'visualizations_total' | 'simulations_total' =
     `${dataType}_total` as 'downloads_total' | 'visualizations_total' | 'simulations_total';
 
-  // Set chart configuration for Chart.js
+  // List of all months
+  const allMonths = [
+    'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  // Fill in missing months
+  const missingMonths = allMonths.filter(month => !chartData.some(item => item.month_name === month));
+  missingMonths.forEach(month => {
+    chartData.push({
+      month_name: month,
+      [key]: 0, // Default to 0 for missing data
+      ips: [],  // No IPs for missing data
+    });
+  });
+
+  // Re-sort chart data to match the correct month order
+  chartData.sort((a, b) => allMonths.indexOf(a.month_name) - allMonths.indexOf(b.month_name));
+
+  // Prepare the chart configuration for Chart.js
   const chartDataConfig = {
-    labels: chartData.map((item) => `Week ${item.week_number}`),
+    labels: chartData.map((item) => item.month_name),
     datasets: [
       {
         label: dataType.charAt(0).toUpperCase() + dataType.slice(1),
+        // Ensure the data is a number array; if missing, default to 0
         data: chartData.map((item) => item[key] ?? 0),
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         tension: 0.1,
       },
+      {
+        label: 'Unique IPs',
+        data: chartData.map((item) => item.ips.length), 
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderDash: [5, 5], 
+        tension: 0.1,
+      }
     ],
   };
 
@@ -140,7 +167,7 @@ export function UsageStatsModal({
     plugins: {
       title: {
         display: true,
-        text: `Weekly ${dataType.charAt(0).toUpperCase() + dataType.slice(1)} Data`,
+        text: `Monthly ${dataType.charAt(0).toUpperCase() + dataType.slice(1)} Data`,
       },
     },
   };
