@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
+from functools import lru_cache
 import ipinfo
 import os
 
@@ -31,6 +32,23 @@ def group_by_week(data, field_name):
 
     return result
 
+@lru_cache(maxsize=1024)
+# Result is stored in memory when called with given IP
+def lookup_country(ip: str) -> str:
+    access_token = os.getenv("IPINFO_TOKEN")
+    if not access_token:
+        print("IPINFO_TOKEN environment variable is not set.")
+        return "Unknown"
+    try:
+        handler = ipinfo.getHandler(access_token)
+        details = handler.getDetails(ip)
+        # Try 'country_name' first, then 'country'
+        country = details.details.get("country_name") or details.details.get("country")
+        return country if country and country.strip() != "" else "Unknown"
+    except Exception as e:
+        print(f"Error fetching country for IP {ip}: {e}")
+        return "Unknown"
+      
 def get_month_range(date):
     # Get the start of the month and return only the month name
     start_of_month = date.replace(day=1)
@@ -62,22 +80,12 @@ def group_by_monthly(data, field_name):
 def get_ip_country_name(ip_list: list[str]) -> list[tuple[str, str]]:
     """
     Given a list of IP addresses, return a list of tuples (ip, country)
-    where each distinct IP is resolved to a country.
+    where each distinct IP is resolved to a country using lookup_country.
     """
     result = []
-    access_token = os.getenv("IPINFO_TOKEN")
-    if not access_token:
-        print("IPINFO_TOKEN environment variable is not set.")
-    handler = ipinfo.getHandler(access_token)
     unique_ips = set(ip_list)
     for ip in unique_ips:
-        try:
-            details = handler.getDetails(ip)
-            # Try 'country_name' first, then 'country'
-            country = details.details.get("country_name") or details.details.get("country") or "Unknown"
-        except Exception as e:
-            print(f"Error fetching country for IP {ip}: {e}")
-            country = "Unknown"
+        country = lookup_country(ip)
         result.append((ip, country))
     return result
 
