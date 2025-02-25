@@ -150,7 +150,7 @@ export function UsageStatsModal({
       ) : error ? (
         <p>Error: {error}</p>
       ) : (
-        <div style={{ display: 'flex', gap: '1rem', minHeight: '550px' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
           {/* Usage stats and graph */}
           <div style={{ flex: 5, minWidth: 0 }}>
             <Tabs value={activeTab}>
@@ -226,7 +226,7 @@ export function UsageStatsModal({
           </div>
           {/* Sidebar for top countries */}
           <div style={{ width: '200px', borderLeft: '1px solid #ccc', paddingLeft: '1rem' }}>
-            <h3>Top Usage Countries</h3>
+            <h3 style={{ textAlign: 'center' }}>Top Usage Countries</h3>
             {topCountriesLoading ? (
               <p>Loading top countries...</p>
             ) : topCountriesError ? (
