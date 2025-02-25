@@ -2,7 +2,7 @@
 #### Team: Jianlong Chen, Kenneth de Guzman
 
 ---
-### Meeting 1 (Week 1: 1/21 - 1/27)
+### Meeting 1 (Week: 1/21 - 1/27)
 
 Date: Tuesday 1/21/25
 
@@ -17,7 +17,7 @@ Actions:
 - Ran the app and populated the database
 - Added a usage report button that opens a popup with placeholder text
 ---
-### Meeting 2 (Week 2: 1/28 - 2/3)
+### Meeting 2 (Week: 1/28 - 2/3)
 
 Date: Tuesday 1/28/25
 
@@ -33,7 +33,7 @@ Actions:
 - Went over how to show data better (graph, tabs for separate collections)
 - Created button for user survey questionnaire
 ---
-### Meeting 3 (Week 3: 2/4 - 2/8)
+### Meeting 3 (Week: 2/4 - 2/8)
 
 Date: Tuesday, 2/4/25 
 
@@ -47,9 +47,33 @@ Actions:
 - Implemented a linen chart graph for showing the frequency of what is used on the site
 - Added buttons to switch between the three different usage types (downloads, visualizations, simulations)
 ---
-### Meeting 4 (Week 4: 2/11 - 2/15)
+### Meeting 4 (Week: 2/11 - 2/15)
+
+Date: Tuesday, 2/11/25
 
 Business:
-
+- Discussed ways to add IP geolocation
+- Went over setting up ipinfo_token to convert IP to a country name
+- Sidebar should show countries that use what features of the site most
 
 Actions:
+- Implemented the feature to show top countries
+- Edited get_ip_country_name in service.py to take in IP and return country name
+- Added get_top_countries function in service.py to return top 10 countries where features are used most
+- Added new endpoints for showing all distinct IPs and their country names and for showing top countries based on combined usage
+---
+### Meeting 5 (Week: 2/18 - 2/22)
+
+Date: 2/18/25
+
+Business: 
+- Short meeting to talk about next steps for project
+- Went over plan to add timescale feature to zoom in on graph 
+
+Actions:
+- Changed the usage graph to show data by month 
+- Added another line in graph for distinct IPs for a month
+---
+### Meeting 6 (Week: 2/25 - 3/1)
+
+
