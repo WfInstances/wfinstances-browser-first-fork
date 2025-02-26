@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Tabs } from '@mantine/core';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  TimeScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartData,
+  ChartOptions,
+} from 'chart.js';
 
-// Register necessary Chart.js components
+// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 type Totals = {
@@ -12,8 +24,8 @@ type Totals = {
   simulations: number;
 };
 
-type ChartData = {
-  month_name: string;
+type ChartDataType = {
+  month: string; // ISO date (like "2024-10-01")
   downloads_total?: number;
   visualizations_total?: number;
   simulations_total?: number;
@@ -27,18 +39,30 @@ export function UsageStatsModal({
   opened: boolean;
   onClose: () => void;
 }) {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [chartData, setChartData] = useState<ChartDataType[]>([]);
   const [totals, setTotals] = useState<Totals | null>(null);
   const [topCountries, setTopCountries] = useState<[string, number][]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  // Separate states for top countries fetch
   const [topCountriesLoading, setTopCountriesLoading] = useState<boolean>(false);
   const [topCountriesError, setTopCountriesError] = useState<string | null>(null);
-  // Use a dedicated state for the active tab
   const [activeTab, setActiveTab] = useState<'downloads' | 'visualizations' | 'simulations'>('downloads');
 
-  // Fetch weekly data for a specific data type
+  // Dynamically import chartjs-plugin-zoom, hammerjs, and the date adapter on the client side.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('hammerjs');
+      import('chartjs-plugin-zoom').then(({ default: zoomPlugin }) => {
+        ChartJS.register(zoomPlugin);
+      });
+      import('chartjs-adapter-date-fns').then(() => {
+        // Register the TimeScale once the adapter is loaded.
+        ChartJS.register(TimeScale);
+      });
+    }
+  }, []);
+
+  // Fetch monthly data for a specific data type
   const fetchData = async (type: 'downloads' | 'visualizations' | 'simulations') => {
     try {
       const response = await fetch(`http://localhost:8081/usage/public/monthly_usage/${type}/`);
@@ -49,11 +73,11 @@ export function UsageStatsModal({
       if (data && data.result) {
         setChartData(data.result);
       } else {
-        throw new Error('Invalid weekly usage data received');
+        throw new Error('Invalid monthly usage data received');
       }
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred while fetching weekly data');
+      else setError('An unknown error occurred while fetching monthly data');
     }
   };
 
@@ -88,7 +112,6 @@ export function UsageStatsModal({
       const data = await response.json();
       if (data && data.result) {
         setTopCountries(data.result);
-        console.log('Top Countries:', data.result); // Debug log
       } else {
         throw new Error('Invalid top countries data received');
       }
@@ -100,7 +123,7 @@ export function UsageStatsModal({
     }
   };
 
-  // Fetch all data in parallel using Promise.all to reduce wait time
+  // Fetch all data in parallel so it's faster
   useEffect(() => {
     if (opened) {
       setLoading(true);
@@ -114,57 +137,73 @@ export function UsageStatsModal({
     }
   }, [opened, activeTab]);
 
-  // Make union type key for safe access to ChartData properties
+  // Which tab is active
   const key: 'downloads_total' | 'visualizations_total' | 'simulations_total' =
     `${activeTab}_total` as 'downloads_total' | 'visualizations_total' | 'simulations_total';
 
-  // List of all months
-  const allMonths = [
-    'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // Fill in missing months
-  const missingMonths = allMonths.filter(month => !chartData.some(item => item.month_name === month));
-  missingMonths.forEach(month => {
-    chartData.push({
-      month_name: month,
-      [key]: 0, // Default to 0 for missing data
-      ips: [],  // No IPs for missing data
-    });
-  });
-
-  // Re-sort chart data to match the correct month order
-  chartData.sort((a, b) => allMonths.indexOf(a.month_name) - allMonths.indexOf(b.month_name));
-
-  // Prepare the chart configuration for Chart.js
-  const chartDataConfig = {
-    labels: chartData.map((item) => item.month_name),
+  // Configure chart data options
+  const chartDataConfig: ChartData<'line', { x: Date; y: number }[], string> = {
     datasets: [
       {
         label: activeTab.charAt(0).toUpperCase() + activeTab.slice(1),
-        data: chartData.map((item) => item[key] ?? 0),
+        data: chartData.map(item => ({
+          // "T00:00" so the date is parsed as local time.
+          x: new Date(item.month + "T00:00"),
+          y: item[key] ?? 0,
+        })),
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         tension: 0.1,
       },
       {
         label: 'Unique IPs',
-        data: chartData.map((item) => item.ips.length), 
+        data: chartData.map(item => ({
+          x: new Date(item.month + "T00:00"),
+          y: item.ips.length,
+        })),
         borderColor: 'rgba(255, 99, 132, 1)',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderDash: [5, 5], 
+        borderDash: [5, 5],
         tension: 0.1,
-      }
+      },
     ],
-  } as any; // Cast to any to bypass strict Chart.js type errors
+  };
 
-  // Configure chart options (using default maintainAspectRatio)
-  const chartOptions = {
+  // Configure chart options
+  const chartOptions: ChartOptions<'line'> = {
     responsive: true,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          tooltipFormat: 'MMM yyyy',
+          unit: 'month',
+          displayFormats: {
+            month: 'MMM yyyy',
+          },
+        },
+      },
+    },
     plugins: {
       title: {
         display: true,
         text: `Monthly ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Data`,
+      },
+      // Zoom in and out of graph
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'x',
+        },
+        zoom: {
+          wheel: {
+            enabled: true,
+          },
+          pinch: {
+            enabled: true,
+          },
+          mode: 'x',
+        },
       },
     },
   };
@@ -196,7 +235,7 @@ export function UsageStatsModal({
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
                     <h3 style={{ textAlign: 'left' }}>Data for Downloads</h3>
-                    <Line data={chartDataConfig} options={chartOptions} />
+                    <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
                   <p>No data available</p>
@@ -206,7 +245,7 @@ export function UsageStatsModal({
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
                     <h3 style={{ textAlign: 'left' }}>Data for Visualizations</h3>
-                    <Line data={chartDataConfig} options={chartOptions} />
+                    <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
                   <p>No data available</p>
@@ -216,7 +255,7 @@ export function UsageStatsModal({
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
                     <h3 style={{ textAlign: 'left' }}>Data for Simulations</h3>
-                    <Line data={chartDataConfig} options={chartOptions} />
+                    <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
                   <p>No data available</p>
