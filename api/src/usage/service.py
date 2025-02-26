@@ -18,9 +18,7 @@ def group_by_week(data, field_name):
         date = datetime.strptime(item['date'], '%Y-%m-%d')
         week_start, week_end = get_week_range(date)
         week = f"{week_start} - {week_end}"
-        # Check if 'num_instances' exists, if not count as 1
         num_instances = item.get('num_instances', 1)
-        # Increment the appropriate field and add the IP to the set
         weekly_data[week][field_name] += num_instances
         weekly_data[week]["ips"].add(item["ip"])
 
@@ -33,7 +31,6 @@ def group_by_week(data, field_name):
     return result
 
 @lru_cache(maxsize=1024)
-# Result is stored in memory when called with given IP
 def lookup_country(ip: str) -> str:
     access_token = os.getenv("IPINFO_TOKEN")
     if not access_token:
@@ -42,46 +39,37 @@ def lookup_country(ip: str) -> str:
     try:
         handler = ipinfo.getHandler(access_token)
         details = handler.getDetails(ip)
-        # Try 'country_name' first, then 'country'
         country = details.details.get("country_name") or details.details.get("country")
         return country if country and country.strip() != "" else "Unknown"
     except Exception as e:
         print(f"Error fetching country for IP {ip}: {e}")
         return "Unknown"
-      
+
 def get_month_range(date):
-    # Get the start of the month and return only the month name
+    # Return the ISO date string representing the first day of the month (e.g., "2024-01-01")
     start_of_month = date.replace(day=1)
-    return start_of_month.strftime('%B')  # Return the month name (e.g., "January")
+    return start_of_month.strftime('%Y-%m-%d')
 
 def group_by_monthly(data, field_name):
-    # Using a defaultdict to group data by month
+    # Using a defaultdict to group data by month (now with full date info)
     monthly_data = defaultdict(lambda: {field_name: 0, "ips": set()})
 
     for item in data:
-        date = datetime.strptime(item['date'], '%Y-%m-%d')  
-        month = get_month_range(date)  # Get the month name for the date
-
-        # Get 'num_instances' value, defaulting to 1 if not present
-        num_instances = item.get('num_instances', 1) 
-
-        # Increment the appropriate field (downloads, visualizations, etc.)
-        monthly_data[month][field_name] += num_instances
-        monthly_data[month]["ips"].add(item["ip"])  # Add IP to the set to ensure uniqueness
+        date = datetime.strptime(item['date'], '%Y-%m-%d')
+        month_key = get_month_range(date)  # Now returns full ISO date string for the month
+        num_instances = item.get('num_instances', 1)
+        monthly_data[month_key][field_name] += num_instances
+        monthly_data[month_key]["ips"].add(item["ip"])
 
     result = [{
-        "month": month,  # Month name
-        field_name: monthly_data[month][field_name],  # Total for the month
-        "ips": list(monthly_data[month]["ips"])  # Unique IP addresses for the month
+        "month": month,  # Full ISO date string (e.g., "2024-01-01")
+        field_name: monthly_data[month][field_name],
+        "ips": list(monthly_data[month]["ips"])
     } for month in monthly_data]
 
     return result
 
 def get_ip_country_name(ip_list: list[str]) -> list[tuple[str, str]]:
-    """
-    Given a list of IP addresses, return a list of tuples (ip, country)
-    where each distinct IP is resolved to a country using lookup_country.
-    """
     result = []
     unique_ips = set(ip_list)
     for ip in unique_ips:
@@ -90,14 +78,9 @@ def get_ip_country_name(ip_list: list[str]) -> list[tuple[str, str]]:
     return result
 
 def get_top_countries(ip_list: list[str]) -> list[tuple[str, int]]:
-    """
-    Given a list of IP addresses, resolve each to a country using get_ip_country_name,
-    then aggregate and return the top 10 countries (as (country, count) tuples).
-    """
-    resolved = get_ip_country_name(ip_list)  # List of (ip, country)
+    resolved = get_ip_country_name(ip_list)
     country_counts = {}
     for _, country in resolved:
-        # Skip unknowns so they aren't counted
         if country == "Unknown":
             continue
         country_counts[country] = country_counts.get(country, 0) + 1

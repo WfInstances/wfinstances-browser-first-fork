@@ -76,13 +76,19 @@ async def get_summarized_simulations() -> dict:
 
 @router.get('/public/totals/', response_model=ApiResponse)
 async def get_totals() -> dict:
-    downloads_count = downloads_collection.count_documents({})
-    visualizations_count = visualizations_collection.count_documents({})
-    simulations_count = simulations_collection.count_documents({})
+    # Instead of counting documents, sum the num_instances field for downloads.
+    downloads_data = list(downloads_collection.find({}))
+    visualizations_data = list(visualizations_collection.find({}))
+    simulations_data = list(simulations_collection.find({}))
+
+    downloads_total = sum(download.get('num_instances', 1) for download in downloads_data)
+    visualizations_total = len(visualizations_data)
+    simulations_total = len(simulations_data)
+
     totals = {
-        "downloads": downloads_count,
-        "visualizations": visualizations_count,
-        "simulations": simulations_count
+        "downloads": downloads_total,
+        "visualizations": visualizations_total,
+        "simulations": simulations_total
     }
     return {
         'detail': 'Data retrieved successfully.',
@@ -93,7 +99,7 @@ async def get_totals() -> dict:
 async def get_monthly_usage(data_type: str) -> dict:
     """
     Get the total data (downloads, visualizations, or simulations) and unique IPs for each month.
-    The X-axis will represent the total data for the month, and the Y-axis will represent the month names.
+    The X-axis will represent the total data for the month, and the Y-axis will represent the month.
     """
     # Define which collection to use based on the `data_type`
     if data_type == "downloads":
@@ -108,15 +114,17 @@ async def get_monthly_usage(data_type: str) -> dict:
             'result': []
         }
     data = list(data_collection.find({}))
-    print(f"Fetched data: {data}")  
+    print(f"Fetched data: {data}")
     summarized_data = group_by_monthly(data, data_type)
     chart_data = []
     for month_data in summarized_data:
         chart_data.append({
-            "month_name": month_data["month"],  # The name of the month (X-axis)
-            f"{data_type}_total": month_data[data_type],  # Total for the month (Y-axis)
-            "ips": month_data["ips"]  # Unique IP addresses in that month
+            "month": month_data["month"],  # Use "month" as ISO date string
+            f"{data_type}_total": month_data[data_type],  # Total for the month
+            "ips": month_data["ips"]  # Unique IP addresses
         })
+    # Sort the chart data chronologically
+    chart_data = sorted(chart_data, key=lambda x: x["month"])
     return {
         'detail': 'Data retrieved successfully.' if chart_data else 'No data retrieved.',
         'result': chart_data
@@ -124,9 +132,7 @@ async def get_monthly_usage(data_type: str) -> dict:
 
 @router.get('/public/ips/', response_model=ApiResponse)
 async def get_ips_with_countries() -> dict:
-    """
-    Get all distinct IP addresses that have performed actions, along with country names.
-    """
+    # Get all unique IPs that did something and get country name
     downloads_ips = [item["ip"] for item in downloads_collection.find({})]
     visualizations_ips = [item["ip"] for item in visualizations_collection.find({})]
     simulations_ips = [item["ip"] for item in simulations_collection.find({})]
@@ -139,9 +145,7 @@ async def get_ips_with_countries() -> dict:
 
 @router.get('/public/top-countries/', response_model=ApiResponse)
 async def get_top_countries_route() -> dict:
-    """
-    Get the top 10 countries based on combined usage (downloads, visualizations, and simulations).
-    """
+    # Get top 10 countries based on combined usage
     downloads_ips = [item["ip"] for item in downloads_collection.find({})]
     visualizations_ips = [item["ip"] for item in visualizations_collection.find({})]
     simulations_ips = [item["ip"] for item in simulations_collection.find({})]
