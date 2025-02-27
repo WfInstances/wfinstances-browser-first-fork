@@ -84,6 +84,7 @@ Business:
 
 Actions:
 - Make graph legend use lines instead of square/rectangle for representation
+- Change modal size and chart zoom/pan sensitivity
 - Implement the new GitHub crawl (git clone)
 
 
