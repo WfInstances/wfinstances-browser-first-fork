@@ -48,7 +48,6 @@ export function UsageStatsModal({
   const [topCountriesError, setTopCountriesError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'downloads' | 'visualizations' | 'simulations'>('downloads');
 
-  // Dynamically import chartjs-plugin-zoom, hammerjs, and the date adapter on the client side.
   useEffect(() => {
     if (typeof window !== 'undefined') {
       import('hammerjs');
@@ -56,7 +55,7 @@ export function UsageStatsModal({
         ChartJS.register(zoomPlugin);
       });
       import('chartjs-adapter-date-fns').then(() => {
-        // Register the TimeScale once the adapter is loaded.
+        // Register the TimeScale
         ChartJS.register(TimeScale);
       });
     }
@@ -137,36 +136,38 @@ export function UsageStatsModal({
     }
   }, [opened, activeTab]);
 
-  // Which tab is active
+  // Determine the key for totals data
   const key: 'downloads_total' | 'visualizations_total' | 'simulations_total' =
     `${activeTab}_total` as 'downloads_total' | 'visualizations_total' | 'simulations_total';
 
+  // Prepare datasets
+  const datasets = [
+    {
+      label: activeTab.charAt(0).toUpperCase() + activeTab.slice(1),
+      data: chartData.map(item => ({
+        x: new Date(item.month + "T00:00"),
+        y: item[key] ?? 0,
+      })),
+      borderColor: 'rgba(75, 192, 192, 1)',
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      tension: 0.1,
+    },
+    {
+      label: 'Unique IPs',
+      data: chartData.map(item => ({
+        x: new Date(item.month + "T00:00"),
+        y: item.ips.length,
+      })),
+      borderColor: 'rgba(255, 99, 132, 1)',
+      backgroundColor: 'rgba(255, 99, 132, 0.2)',
+      borderDash: [5, 5],
+      tension: 0.1,
+    },
+  ];
+
   // Configure chart data options
-  const chartDataConfig: ChartData<'line', { x: Date; y: number }[], string> = {
-    datasets: [
-      {
-        label: activeTab.charAt(0).toUpperCase() + activeTab.slice(1),
-        data: chartData.map(item => ({
-          // "T00:00" so the date is parsed as local time.
-          x: new Date(item.month + "T00:00"),
-          y: item[key] ?? 0,
-        })),
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.1,
-      },
-      {
-        label: 'Unique IPs',
-        data: chartData.map(item => ({
-          x: new Date(item.month + "T00:00"),
-          y: item.ips.length,
-        })),
-        borderColor: 'rgba(255, 99, 132, 1)',
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderDash: [5, 5],
-        tension: 0.1,
-      },
-    ],
+  const chartDataConfig: ChartData<'line'> = {
+    datasets: datasets as any, // Cast to any to avoid type errors
   };
 
   // Configure chart options

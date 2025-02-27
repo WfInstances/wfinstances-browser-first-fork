@@ -76,4 +76,14 @@ Actions:
 ---
 ### Meeting 6 (Week: 2/25 - 3/1)
 
+Date: 2/25/25
+
+Business: 
+- Discussed implementing new way to populate the database
+- Use git clone and git pull 
+
+Actions:
+- Make graph legend use lines instead of square/rectangle for representation
+- Implement the new GitHub crawl (git clone)
+
 

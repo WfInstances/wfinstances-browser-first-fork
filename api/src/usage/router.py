@@ -99,7 +99,7 @@ async def get_totals() -> dict:
 async def get_monthly_usage(data_type: str) -> dict:
     """
     Get the total data (downloads, visualizations, or simulations) and unique IPs for each month.
-    The X-axis will represent the total data for the month, and the Y-axis will represent the month.
+    The x-axis is total data for the month, and y-axis represents the month.
     """
     # Define which collection to use based on the `data_type`
     if data_type == "downloads":
@@ -120,10 +120,10 @@ async def get_monthly_usage(data_type: str) -> dict:
     for month_data in summarized_data:
         chart_data.append({
             "month": month_data["month"],  # Use "month" as ISO date string
-            f"{data_type}_total": month_data[data_type],  # Total for the month
-            "ips": month_data["ips"]  # Unique IP addresses
+            f"{data_type}_total": month_data[data_type],
+            "ips": month_data["ips"]
         })
-    # Sort the chart data chronologically
+    # Sort chart data chronologically
     chart_data = sorted(chart_data, key=lambda x: x["month"])
     return {
         'detail': 'Data retrieved successfully.' if chart_data else 'No data retrieved.',
