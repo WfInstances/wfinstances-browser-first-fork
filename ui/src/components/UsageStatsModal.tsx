@@ -150,7 +150,9 @@ export function UsageStatsModal({
       })),
       borderColor: 'rgba(75, 192, 192, 1)',
       backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      tension: 0.1,
+      tension: 0.07,
+      pointRadius: 3,
+      pointStyle: 'circle',
     },
     {
       label: 'Unique IPs',
@@ -161,7 +163,9 @@ export function UsageStatsModal({
       borderColor: 'rgba(255, 99, 132, 1)',
       backgroundColor: 'rgba(255, 99, 132, 0.2)',
       borderDash: [5, 5],
-      tension: 0.1,
+      tension: 0.07,
+      pointRadius: 3,
+      pointStyle: 'circle',
     },
   ];
 
@@ -189,28 +193,58 @@ export function UsageStatsModal({
       title: {
         display: true,
         text: `Monthly ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Data`,
+        font: {
+          size: 16,
+          weight: 'bold',
+        },
+        color: '#000',
+        padding: {
+          top: 35,
+          bottom: 20
+        },
+      },
+      legend: {
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'line',
+          font: {
+            size: 12,
+          },
+        },
       },
       // Zoom in and out of graph
       zoom: {
         pan: {
           enabled: true,
-          mode: 'x',
+          mode: 'xy',
+          speed: 0.08,
         },
         zoom: {
           wheel: {
             enabled: true,
+            speed: 0.08,
           },
           pinch: {
             enabled: true,
           },
-          mode: 'x',
+          mode: 'xy',
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.dataset.label || '';
+            const value = context.raw.y;
+            return `${label}: ${value}`;
+          },
         },
       },
     },
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Usage Statistics" size="xl">
+    <Modal
+      opened={opened} onClose={onClose} title="Usage Statistics" size='75%'>
       {loading ? (
         <p>Loading...</p>
       ) : error ? (
@@ -232,30 +266,27 @@ export function UsageStatsModal({
                 </Tabs.Tab>
               </Tabs.List>
 
-              <Tabs.Panel value="downloads" pt="xs">
+              <Tabs.Panel value="downloads" pt="xs" style={{ paddingBottom: '20px' }}>
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
-                    <h3 style={{ textAlign: 'left' }}>Data for Downloads</h3>
                     <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
                   <p>No data available</p>
                 )}
               </Tabs.Panel>
-              <Tabs.Panel value="visualizations" pt="xs">
+              <Tabs.Panel value="visualizations" pt="xs" style={{ paddingBottom: '20px' }}>
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
-                    <h3 style={{ textAlign: 'left' }}>Data for Visualizations</h3>
                     <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
                   <p>No data available</p>
                 )}
               </Tabs.Panel>
-              <Tabs.Panel value="simulations" pt="xs">
+              <Tabs.Panel value="simulations" pt="xs" style={{ paddingBottom: '20px' }}>
                 {chartData.length ? (
                   <div style={{ width: '100%' }}>
-                    <h3 style={{ textAlign: 'left' }}>Data for Simulations</h3>
                     <Line data={chartDataConfig} options={chartOptions as any} />
                   </div>
                 ) : (
@@ -291,7 +322,7 @@ export function UsageStatsModal({
             )}
           </div>
           {/* Sidebar for top countries */}
-          <div style={{ width: '200px', borderLeft: '1px solid #ccc', paddingLeft: '1rem' }}>
+          <div style={{ width: '210px', borderLeft: '1px solid #ccc', paddingLeft: '1rem' }}>
             <h3 style={{ textAlign: 'center' }}>Top Usage Countries</h3>
             {topCountriesLoading ? (
               <p>Loading top countries...</p>
