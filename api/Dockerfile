@@ -5,21 +5,21 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y git
 
 RUN apt-get install -y cron
 
-RUN echo '#!/bin/sh\ncurl -X PUT http://localhost:8081/metrics/private/github/wfcommons/WfInstances' > /usr/local/bin/workflowInjection.sh
+RUN mkdir -p /data/github
 
-RUN chmod +x /usr/local/bin/workflowInjection.sh
+RUN git clone https://github.com/wfcommons/WfInstances.git /data/github
 
 ARG WFINSTANCES_CRAWL_PERIOD_IN_DAYS
 
-RUN  echo "0 0 */${WFINSTANCES_CRAWL_PERIOD_IN_DAYS} * *  /usr/local/bin/workflowInjection.sh" > /etc/cron.d/run-curl-job
+RUN echo "0 * * * * cd /data/github && git pull origin main" > /etc/cron.d/git-pull-repo
 
-RUN chmod 0644 /etc/cron.d/run-curl-job
+RUN chmod 0644 /etc/cron.d/git-pull-repo
 
-RUN crontab /etc/cron.d/run-curl-job
+RUN crontab /etc/cron.d/git-pull-repo
 
 # Install WRENCH API v0.4
 RUN apt-get -y install zip
