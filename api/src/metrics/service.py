@@ -5,6 +5,9 @@ from src.metrics.graph import Graph
 from src.exceptions import InvalidWfInstanceException, GithubResourceNotFoundException
 from src.wfinstances.service import validate_wf_instance
 import sys
+import os
+import json
+import time
 import git
 
 
@@ -25,7 +28,7 @@ def insert_metrics_from_github(owner: str, repo: str) -> tuple[list, list]:
 
     # Set up the repository URL and local directory
     repo_url = f"https://github.com/{owner}/{repo}.git"
-    local_dir = f"/tmp/{repo}"
+    local_dir = f"/data/github/{repo}"
 
     # Clone the repository if it doesn't exist locally
     if not os.path.exists(local_dir):
@@ -38,11 +41,16 @@ def insert_metrics_from_github(owner: str, repo: str) -> tuple[list, list]:
         origin.pull()
 
     # Now that the repository is cloned or updated, looking for .json files
+    now = time.time()
     for root, dirs, files in os.walk(local_dir):
         for file in files:
             if file.endswith('.json'):
                 file_path = os.path.join(root, file)
-                sys.stderr.write(f"Inspecting file {file}\n")
+                if now > os.path.getmtime(file_path):
+                    sys.stderr.write(f"Skipping unchanged file {file}\n")
+                    continue
+                else:
+                    sys.stderr.write(f"Inspecting updated file {file}\n")
 
                 # Read the JSON file
                 try:
