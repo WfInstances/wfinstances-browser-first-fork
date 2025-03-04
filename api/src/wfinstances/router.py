@@ -13,7 +13,13 @@ async def post_query_wf_instances(request: Request, ids: list[str]) -> dict:
     # Call the function to update the downloads collection
     add_item_to_downloads_collection(ids, request.client.host)
 
-    wf_instances = retrieve_wf_instances(serialize_metrics(metrics_collection.find({'_id': {'$in': ids}})))
+    # Preserve the order!
+    # OLD CODE: wf_instances = retrieve_wf_instances(serialize_metrics(metrics_collection.find({'_id': {'$in': ids}})))
+    wf_instances = []
+    for id_ in ids:
+        wf_instance = retrieve_wf_instances(serialize_metrics([metrics_collection.find_one({'_id': id_})]))
+        wf_instances.extend(wf_instance)
+
     return {
         'detail': ('WfInstances retrieved.'
                    if len(ids) == len(wf_instances) else

@@ -21,6 +21,7 @@ RUN apt -y install curl
 ARG PORT
 ARG SERVER_NAME
 
+COPY custom-nginx-locations-common.conf /etc/nginx/custom-nginx-locations-common.conf
 COPY custom-nginx-port-${PORT}.conf /etc/nginx/custom-nginx.conf
 RUN sed -i "s/SERVER_NAME/${SERVER_NAME}/g" /etc/nginx/custom-nginx.conf
 
