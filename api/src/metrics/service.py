@@ -5,6 +5,10 @@ from src.metrics.graph import Graph
 from src.exceptions import InvalidWfInstanceException, GithubResourceNotFoundException
 from src.wfinstances.service import validate_wf_instance
 import sys
+import os
+import json
+import time
+import git
 
 
 def insert_metrics_from_github(owner: str, repo: str) -> tuple[list, list]:
@@ -22,41 +26,61 @@ def insert_metrics_from_github(owner: str, repo: str) -> tuple[list, list]:
     """
     valid_wf_instances, invalid_wf_instances = [], []
 
-    def recurse_dir(path='') -> None:
-        response = requests.get(f'https://api.github.com/repos/{owner}/{repo}/contents/{path}')
-        if response.status_code != 200:
-            raise GithubResourceNotFoundException('repository')
-        files = response.json()
+    # Set up the repository URL and local directory
+    repo_url = f"https://github.com/{owner}/{repo}.git"
+    local_dir = f"/data/github/{repo}"
 
+    # Clone the repository if it doesn't exist locally
+    if not os.path.exists(local_dir):
+        print(f"Cloning repository {repo_url} into {local_dir}...")
+        git.Repo.clone_from(repo_url, local_dir)
+    else:
+        print(f"Repository already exists locally. Pulling the latest changes...")
+        repo = git.Repo(local_dir)
+        origin = repo.remotes.origin
+        origin.pull()
+
+    # Now that the repository is cloned or updated, looking for .json files
+    now = time.time()
+    for root, dirs, files in os.walk(local_dir):
         for file in files:
-            if file['type'] == 'dir':
-                recurse_dir(file['path'])
-            elif str.endswith(file['name'], '.json'):
-                sys.stderr.write(f"Inspecting file {file['name']}\n")
-                response = requests.get(file['download_url'])
-                if response.status_code != 200:
-                    raise GithubResourceNotFoundException('download_url')
-                wf_instance = response.json()
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                if now > os.path.getmtime(file_path):
+                    sys.stderr.write(f"Skipping unchanged file {file}\n")
+                    continue
+                else:
+                    sys.stderr.write(f"Inspecting updated file {file}\n")
 
+                # Read the JSON file
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        wf_instance = json.load(f)
+                except json.JSONDecodeError:
+                    sys.stderr.write(f"Invalid JSON format: {file}\n")
+                    invalid_wf_instances.append(file)
+                    continue
+
+                # Validate the WfInstance schema
                 try:
                     validate_wf_instance(wf_instance)
                 except InvalidWfInstanceException:
-                    invalid_wf_instances.append(file['name'])
+                    invalid_wf_instances.append(file)
                     continue
 
-                valid_wf_instances.append(file['name'])
+                valid_wf_instances.append(file)
 
-                # Replace if already exists, otherwise add into metrics_collection
+                # Generate metrics and store them in the database
                 metrics = _generate_metrics(wf_instance)
-                metrics['_id'] = file['name']
-                metrics['_githubRepo'] = f'{owner}/{repo}'
-                metrics['_downloadUrl'] = file['download_url']
+                metrics["_id"] = file
+                metrics["_githubRepo"] = f"{owner}/{repo}"
+                metrics["_filePath"] = file_path
                 metrics_collection.find_one_and_update(
-                    {'_id': metrics['_id']},
-                    {'$set': metrics},
-                    upsert=True)
+                    {"_id": metrics["_id"]},
+                    {"$set": metrics},
+                    upsert=True,
+                )
 
-    recurse_dir()
     return valid_wf_instances, invalid_wf_instances
 
 

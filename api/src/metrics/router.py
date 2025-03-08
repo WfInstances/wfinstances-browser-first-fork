@@ -62,7 +62,6 @@ async def put_metrics_github(owner: str, repo: str) -> dict:
     - **repo**: The name of the GitHub repository
     """
 
-    sys.stderr.write(f"[TODO] Should be git cloning repo in directory /data/github/\n")
     valid_wf_instances, invalid_wf_instances = insert_metrics_from_github(owner, repo)
     return {
         'detail': ('Some WfInstances were invalid, check that they follow the WfFormat.'
