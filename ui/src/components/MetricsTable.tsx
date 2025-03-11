@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     MantineReactTable,
     useMantineReactTable,
@@ -15,6 +15,7 @@ import {IconEye, IconChartHistogram} from '@tabler/icons-react';
 import { DownloadButton } from './DownloadButton';
 import { GraphModal } from '~/components/GraphModal';
 import { SimulateModal } from '~/components/SimulateModal';
+import { QuestionnairesModal } from '~/components/QuestionnairesModal';
 import { Metrics } from '~/types/Metrics';
 // import classes from "~/components/style/Navbar.module.css";
 
@@ -37,7 +38,70 @@ export function MetricsTable({
     const [openedSimulateModal, { open:openSimulateModal, close:closeSimulateModal}] = useDisclosure(false);
     const [selectedRowViz, setSelectedRowViz] = useState<MRT_Row<Metrics> | null>(null);
     const [selectedRowSimulate, setSelectedRowSimulate] = useState<MRT_Row<Metrics> | null>(null);
+    
 
+    const [clickCounts, setClickCounts] = useState<Record<string, number>>({
+        download: 0,
+        graph: 0,
+        simulate: 0
+    });
+    const [showSurvey, setShowSurvey] = useState(false);
+
+    useEffect(() => {
+        const fetchSurveyData = async () => {
+            try {
+                const response = await fetch(`http://localhost:8081/survey/public/surveys/?ip=${client_ip}`);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const result = await response.json();
+    
+                if (result.result) {
+                    setClickCounts({
+                        download: result.result.total_clicks,
+                        graph: result.result.total_clicks,
+                        simulate: result.result.total_clicks,
+                    });
+    
+                  
+                    if ([5, 50, 500].includes(result.result.total_clicks)) {
+                        console.log(" Survey should appear!"); 
+                        setShowSurvey(true);
+                    }
+                }
+            } catch (error) {
+                console.error(' Error fetching survey data', error);
+            }
+        };
+    
+        fetchSurveyData();
+    }, [client_ip]);
+    
+    const incrementClickCount = async (type: 'DownloadButton' | 'GraphModal' | 'SimulateModal') => {
+        try {
+            const requestBody = { ip: client_ip, click_type: type };
+            console.log('Request Body:', requestBody); 
+    
+            const response = await fetch('http://localhost:8081/survey/public/surveys/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+            });
+    
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            const result = await response.json();
+    
+            setClickCounts(prev => ({
+                ...prev,
+                [type.toLowerCase()]: prev[type.toLowerCase()] + 1,
+            }));
+    
+            if (result.detail.includes('Survey triggered')) {
+                setShowSurvey(true);
+            }
+        } catch (error) {
+            console.error('Error tracking user activity', error);
+        }
+    };
+    
     const handleRowMenuActionViz = (row: MRT_Row<Metrics>) => {
         setSelectedRowViz(row);
         openGraphModal();
@@ -214,16 +278,24 @@ export function MetricsTable({
             return (
                 <Box style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px' }}>
                     <Tooltip label={vizTooltipMessage} position="top">
-                        <ActionIcon
-                            onClick={() => handleRowMenuActionViz(row)}
+                    <ActionIcon
+                            onClick={() => {
+                                setSelectedRowViz(row);
+                                openGraphModal();
+                                incrementClickCount('GraphModal');
+                            }}
                             disabled={vizIsDisabled}
                         >
                             <IconEye />
                         </ActionIcon>
                     </Tooltip>
                     <Tooltip label={simTooltipMessage} position="top">
-                        <ActionIcon
-                            onClick={() => handleRowMenuActionSimulate(row)}
+                    <ActionIcon
+                            onClick={() => {
+                                setSelectedRowSimulate(row);
+                                openSimulateModal();
+                                incrementClickCount('SimulateModal');
+                            }}
                             disabled={simIsDisabled}
                         >
                             <IconChartHistogram />
@@ -236,7 +308,9 @@ export function MetricsTable({
             return (
                 <Flex p="md" justify="space-between">
                     <Flex>
+                    <div onClick={() => incrementClickCount('DownloadButton')}>
                         <DownloadButton table={table} />
+                    </div>
                     </Flex>
                     <Flex gap="xs">
                         <MRT_ToggleFiltersButton table={table} />
@@ -253,6 +327,8 @@ export function MetricsTable({
             <MantineReactTable table={table} />
             {selectedRowSimulate && <SimulateModal id={selectedRowSimulate.original.id} client_ip={client_ip} opened={openedSimulateModal} onClose={closeSimulateModal} />}
             {selectedRowViz && <GraphModal id={selectedRowViz.original.id} client_ip={client_ip} opened={openedGraphModal} onClose={closeGraphModal} />}
+            <QuestionnairesModal opened={showSurvey} onClose={() => setShowSurvey(false)} client_ip={client_ip} />
+
         </>
     );
 }
