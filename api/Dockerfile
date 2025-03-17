@@ -3,7 +3,7 @@ USER root
 
 COPY requirements.txt .
 
-RUN pip install -r requirements.txt
+RUN pip install --break-system-packages -r requirements.txt
 
 RUN apt-get update && apt-get install -y git
 
@@ -23,11 +23,11 @@ RUN crontab /etc/cron.d/git-pull-repo
 
 # Install WRENCH API v0.4
 RUN apt-get -y install zip
-RUN python3 -m pip install build
-RUN wget https://github.com/wrench-project/wrench-python-api/archive/refs/tags/v0.4.zip; unzip v0.4.zip; cd wrench-python-api-0.4; python3 -m build; python3 -m pip install ./dist/wrench-*.whl
+RUN python3 -m pip install --break-system-packages build
+RUN wget https://github.com/wrench-project/wrench-python-api/archive/refs/tags/v0.4.zip; unzip v0.4.zip; cd wrench-python-api-0.4; python3 -m build; python3 -m pip install --break-system-packages ./dist/wrench-*.whl
 
 # Intall IPInfo
-RUN python3 -m pip install ipinfo
+RUN python3 -m pip install --break-system-packages ipinfo
 
 COPY . .
 
