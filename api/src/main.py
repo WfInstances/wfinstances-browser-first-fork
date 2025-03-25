@@ -6,6 +6,7 @@ from src.wfinstances.router import router as wf_instances_router
 from src.metrics.router import router as metrics_router
 from src.usage.router import router as usage_router
 from src.survey.router import router as survey_router
+from src.satisfaction.router import router as satisfaction_router
 import os
 
 app = FastAPI(swagger_ui_parameters={"displayRequestDuration": True})
@@ -13,6 +14,7 @@ app.include_router(wf_instances_router, prefix='/wf-instances')
 app.include_router(metrics_router, prefix='/metrics')
 app.include_router(usage_router, prefix='/usage')
 app.include_router(survey_router, prefix='/survey')
+app.include_router(satisfaction_router, prefix='/satisfaction')
 app.add_exception_handler(GithubResourceNotFoundException, github_resource_not_found_exception_handler)
 
 origins = [f"http://{os.getenv('NGINX_SERVER_HOSTNAME')}"]
