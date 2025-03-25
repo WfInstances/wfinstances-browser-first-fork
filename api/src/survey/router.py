@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from src.database import surveys_collection
 from src.models import ApiResponse
 from pydantic import BaseModel
+from datetime import datetime
 
 router = APIRouter()
 
@@ -63,7 +64,8 @@ async def track_user_activity(data: SurveyRequest):
 
 class RatingRequest(BaseModel):
     ip: str
-    rating: int
+    usefulness: int
+    usability: int
 
 @router.post('/public/surveys/rating', response_model=dict)
 async def submit_rating(request: RatingRequest):
@@ -71,13 +73,23 @@ async def submit_rating(request: RatingRequest):
     Store user rating in the surveys collection.
     Updates the existing document if the IP already exists.
     """
-    if request.rating < 1 or request.rating > 10:
-        raise HTTPException(status_code=400, detail="Invalid rating. Must be between 1 and 10.")
+    if not (1 <= request.usefulness <= 10):
+        raise HTTPException(status_code=400, detail="Invalid usefulness rating.")
+    if not (1 <= request.usability <= 10):
+        raise HTTPException(status_code=400, detail="Invalid usability rating.")
 
     surveys_collection.update_one(
-        {"ip": request.ip},
-        {"$set": {"rating": request.rating}},  
-        upsert=True
-    )
+    {"ip": request.ip},
+    {
+        "$push": {
+            "ratings": {
+                "usefulness": request.usefulness,
+                "usability": request.usability,
+                "date": datetime.utcnow().isoformat()
+            }
+        }
+    },
+    upsert=True
+)
 
     return {"detail": "Rating submitted successfully."}
