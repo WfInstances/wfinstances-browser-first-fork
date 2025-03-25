@@ -3,6 +3,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
+
 load_dotenv()
 
 uri = os.getenv('MONGO_URI')
@@ -63,6 +64,7 @@ def add_to_surveys_collection(client_ip: str, total_clicks: int, rating: int):
         "date": datetime.utcnow().isoformat(),
         "ip": client_ip,
         "total_clicks": total_clicks,
-        "rating": rating,
+        "usefulness_rating": usefulness_rating,
+        "usability_rating": usability_rating,
     }
     add_to_collection("surveys", data, update_existing=True)
